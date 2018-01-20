@@ -1,5 +1,5 @@
 /train
 /test
 .ipynb_checkpoints
-"Icon\r"
-Notes.gdoc
+*.gdoc
+*Icon*
