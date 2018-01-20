@@ -3,3 +3,4 @@
 .ipynb_checkpoints
 *.gdoc
 *Icon*
+.idea*
