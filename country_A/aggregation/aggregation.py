@@ -131,4 +131,8 @@ class Aggregate():
         X = kwargs.pop('X', self.X)
         col_to_func = kwargs.pop('col_to_func', self.col_to_func)
         # Transform and return
-        return pd.concat([getattr(Aggregate, func + '_of_indiv')(X[col]) for col, func in col_to_func.items()], axis=1)        
+        return pd.concat([getattr(Aggregate, func + '_of_indiv')(X[col]) for col, func in col_to_func.items()], axis=1)
+        
+    def fit_transform (self, **kwargs):
+        getattr(Aggregate, 'fit')(self, **kwargs)
+        return getattr(Aggregate, 'transform')(self, **kwargs)
