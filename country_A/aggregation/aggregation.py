@@ -1,4 +1,7 @@
-class Aggregate():
+import pandas as pd
+import numpy as np
+
+class Aggregate():	
     from scipy.stats import spearmanr, mode
     from sklearn.feature_selection import chi2
     from sklearn.ensemble import RandomForestClassifier
@@ -35,7 +38,7 @@ class Aggregate():
     
     # Possible evaluation functions
     def chi_squared (x, y):
-        return pd.Series(Aggregate.chi2(x, Y)[0])
+        return pd.Series(Aggregate.chi2(x, y)[0])
     
     def spearman (x, y):
         result = x.apply(Aggregate.spearmanr, axis=0, args=(y,))
