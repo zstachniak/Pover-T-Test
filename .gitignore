@@ -4,3 +4,6 @@
 *.gdoc
 *Icon*
 .idea*
+*/zander
+/Paper
+*/__pycache__
