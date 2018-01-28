@@ -6,4 +6,4 @@
 .idea*
 */zander
 /Paper
-*/__pycache__
+*__pycache__/
