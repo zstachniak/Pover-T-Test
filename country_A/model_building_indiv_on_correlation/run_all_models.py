@@ -7,6 +7,7 @@ Created on Sun Jan 28 19:46:40 2018
 """
 import pickle
 import numpy as np
+import os
 from sklearn.naive_bayes import GaussianNB
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
