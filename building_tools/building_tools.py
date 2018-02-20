@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from matplotlib.pyplot import cm
 from sklearn.utils import resample
 from sklearn.model_selection import GridSearchCV, cross_validate
+from sklearn.base import BaseEstimator
 from scipy.stats import ttest_ind, norm
 from multiprocessing import cpu_count
 import time
@@ -19,6 +20,11 @@ import os
 
 from sklearn.metrics import log_loss, accuracy_score, f1_score, precision_score, recall_score, make_scorer, precision_recall_fscore_support
 
+def ensure_dir (folder_path):
+    '''Simple function to ensure that a directory exists.'''
+    # Check if staging dir exists
+    if not os.path.isdir(folder_path):
+        os.mkdir(folder_path)
 
 class Bootstrap_Indices:
     '''A cross-validation iterator that will work with GridSearchCV.
@@ -191,6 +197,7 @@ def bootstrap_tuning (x, y, model_names, model_params, model_inits, **kwargs):
         models[clf]['cv_time'] = time.time() - t0
         # Optional save model
         if save:
+            ensure_dir('results')
             with open(os.path.join('results', clf + '.pickle'), 'wb') as f:
                 pickle.dump(models[clf], f, pickle.HIGHEST_PROTOCOL)
     return models
@@ -431,3 +438,43 @@ def compare_scores (*args, alternate='less', **kwargs):
             res = 'Fail to reject'
         hyp_result = '\t{0} the null hypothesis.'.format(res)
         print('\n'.join([hyp_state, hyp_test, hyp_result]) + '\n')
+
+
+class stacked_ensemble_with_learned_weights(BaseEstimator):
+    # Import statements
+    from sklearn.ensemble import VotingClassifier
+    from sklearn.linear_model import SGDClassifier
+
+    def __init__(self, clfs, loss='log', penalty='l2', tol=1e-3, n_jobs=-1):
+        self.clfs = clfs
+        self.loss = loss
+        self.penalty = penalty
+        self.tol = tol
+        self.n_jobs = n_jobs
+
+    def fit(self, X, Y):
+        self.X = X
+        self.Y = Y
+        # Initialize and fit the VotingClassifier
+        stacked = VotingClassifier(estimators=self.clfs, voting='soft', flatten_transform=False, n_jobs=self.n_jobs)
+        stacked = stacked.fit(self.X, self.Y)
+        # For each row, return an array of probabilities assigned by each model
+        prob_array = stacked.transform(self.X)
+        # Keep only class 1 and transpose for correct shape
+        self.prob_array = prob_array[:, :, 1].T
+        # Initialize and fit the Stochastic Gradient Descent Classifier
+        sgd = SGDClassifier(loss=self.loss, penalty=self.penalty, tol=self.tol, shuffle=True, n_jobs=-1)
+        sgd.fit(self.prob_array, self.Y)
+        # Gather the coefficients (these will be weights for Voting Classifier)
+        self.weights = sgd.coef_[0]
+        # Initialize and fit a new VotingClassifier that now includes the weights
+        stacked = VotingClassifier(estimators=self.clfs, voting='soft', weights=self.weights, flatten_transform=False,
+                                   n_jobs=self.n_jobs)
+        self.stacked = stacked.fit(self.X, self.Y)
+        return self.stacked
+
+    def predict(self, X):
+        return self.stacked.predict(X)
+
+    def predict_proba(self, X):
+        return self.stacked.predict_proba(X)
